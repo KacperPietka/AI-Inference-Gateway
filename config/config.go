@@ -11,7 +11,7 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		OllamaURL:    getEnv("OLLAMA_URL", "http://localhost:11434/api/generate"),
-		DefaultModel: getEnv("DEFAULT_MODEL", "mistral"),
+		DefaultModel: getEnv("DEFAULT_MODEL", "tinyllama"),
 		ServerPort:   getEnv("SERVER_PORT", ":8080"),
 	}
 }

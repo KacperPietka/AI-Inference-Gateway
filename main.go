@@ -6,6 +6,7 @@ import (
 
 	"inference-gateway/config"
 	"inference-gateway/handlers"
+	"inference-gateway/middleware"
 	"inference-gateway/models"
 )
 
@@ -18,8 +19,8 @@ func main() {
 	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel)
 
 	// Register routes
-	http.HandleFunc("/health", handlers.HealthHandler)
-	http.HandleFunc("/generate", generateHandler.Handle)
+	http.HandleFunc("/health", middleware.Logger(handlers.HealthHandler))
+	http.HandleFunc("/generate", middleware.Logger(generateHandler.Handle))
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.ServerPort)
