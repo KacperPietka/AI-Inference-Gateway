@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"inference-gateway/types"
 	"net/http"
+	"strings"
 	"time"
+
+	"inference-gateway/types"
 )
 
 type OllamaClient struct {
@@ -22,6 +24,30 @@ func NewOllamaClient(url string) *OllamaClient {
 			Timeout: 60 * time.Second,
 		},
 	}
+}
+
+func (c *OllamaClient) GetModels() (*types.OllamaModelsReponse, error) {
+	// This is a GET request - simpler than Generate
+	// Ollama's models endpoint is /api/tags
+	url := strings.Replace(c.URL, "/api/generate", "/api/tags", 1)
+
+	resp, err := c.HTTPClient.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call ollama models: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ollama returned statis %d", resp.StatusCode)
+	}
+
+	var modelsResp types.OllamaModelsReponse
+	err = json.NewDecoder(resp.Body).Decode(&modelsResp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode models response: %w", err)
+	}
+
+	return &modelsResp, nil
 }
 
 func (c *OllamaClient) Generate(prompt, model string) (*types.OllamaResponse, error) {

@@ -22,10 +22,12 @@ func main() {
 	// Build dependencies
 	ollamaClient := models.NewOllamaClient(cfg.OllamaURL)
 	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel)
+	modelsHandler := handlers.NewModelsHandler(ollamaClient)
 
 	// Register routes
 	http.HandleFunc("/health", middleware.Logger(handlers.HealthHandler))
 	http.HandleFunc("/generate", middleware.Logger(generateHandler.Handle))
+	http.HandleFunc("/models", middleware.Logger(modelsHandler.Handle))
 
 	server := &http.Server{
 		Addr: cfg.ServerPort,

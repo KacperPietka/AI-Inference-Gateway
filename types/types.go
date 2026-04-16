@@ -30,3 +30,18 @@ type OllamaResponse struct {
 	Response string `json:"response"`
 	Model    string `json:"model"`
 }
+
+// Models endpoint types
+
+type OllamaModel struct {
+	Name string `json:"name"`
+	Size int64  `json:"size"`
+}
+
+type OllamaModelsReponse struct {
+	Models []OllamaModel `json:"models"`
+}
+
+type ModelsReponse struct {
+	Models []OllamaModel `json:"models"`
+}
