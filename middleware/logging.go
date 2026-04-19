@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -21,20 +22,27 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-func Logger(next http.HandlerFunc) http.HandlerFunc {
+func NewLogger() *slog.Logger {
+	return slog.New(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}),
+	)
+}
+
+func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-
 		wrapped := newResponseWriter(w)
 
 		next(wrapped, r)
 
-		log.Printf(
-			"method=%s path=%s status=%d duration=%s",
-			r.Method,
-			r.URL.Path,
-			wrapped.statusCode,
-			time.Since(start),
+		logger.Info("request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", wrapped.statusCode,
+			"duration", time.Since(start).String(),
+			"remoted_addr", r.RemoteAddr, // allows to see where requests are coming from
 		)
 	}
 }

@@ -39,15 +39,18 @@ func main() {
 	// Load config
 	cfg := config.Load()
 
+	// Created the structured logger once which is shared across all middleware
+	logger := middleware.NewLogger()
+
 	// Build dependencies
 	ollamaClient := models.NewOllamaClient(cfg.OllamaURL)
 	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel)
 	modelsHandler := handlers.NewModelsHandler(ollamaClient)
 
-	// Register routes
-	http.HandleFunc("/health", middleware.Logger(handlers.HealthHandler))
-	http.HandleFunc("/generate", middleware.Logger(generateHandler.Handle))
-	http.HandleFunc("/models", middleware.Logger(modelsHandler.Handle))
+	// Register routes and pass logger to each middleware wrapped
+	http.HandleFunc("/health", middleware.Logger(logger, handlers.HealthHandler))
+	http.HandleFunc("/generate", middleware.Logger(logger, generateHandler.Handle))
+	http.HandleFunc("/models", middleware.Logger(logger, modelsHandler.Handle))
 
 	server := &http.Server{
 		Addr: cfg.ServerPort,
@@ -59,7 +62,7 @@ func main() {
 	go func() {
 		log.Printf("Server starting on port %s", cfg.ServerPort)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server error: %v", err)
+			logger.Error("server error", "error", err)
 		}
 	}()
 
@@ -70,14 +73,14 @@ func main() {
 	// blocks yntil a signal arrives (keeps running after shutting down to finish a request)
 	<-quit
 
-	log.Println("Shutting down server, finishing in-progress requests...")
+	logger.Info("shutting down server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("forced shutdown: %v", err)
+		logger.Error("forced shutdown", "error", err)
 	}
 
-	log.Println("Server exited cleanly")
+	logger.Info("server exited cleanly")
 }
