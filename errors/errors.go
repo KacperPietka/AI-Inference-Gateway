@@ -48,4 +48,26 @@ var (
 		Code:    http.StatusServiceUnavailable,
 		Message: "model is unavailable",
 	}
-	E
+	ErrRateLimited = &GatewayError{
+		Code:    http.StatusTooManyRequests,
+		Message: "rate limit exceeded",
+	}
+)
+
+// Creates a GateewayError wrapping and underlying error
+func New(base *GatewayError, err error) *GatewayError {
+	return &GatewayError{
+		Code:    base.Code,
+		Message: base.Message,
+		Err:     err,
+	}
+}
+
+// allows to match GatewayErrors by code + message
+func (e *GatewayError) Is(target error) bool {
+	var t *GatewayError
+	if errors.As(target, &t) {
+		return e.Code == t.Code && e.Message == t.Message
+	}
+	return false
+}

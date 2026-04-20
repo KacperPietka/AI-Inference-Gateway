@@ -82,4 +82,5 @@ func main() {
 		logger.Error("forced shutdown", "error", err)
 	}
 
-	logger.Info("server exited clea
+	logger.Info("server exited cleanly")
+}

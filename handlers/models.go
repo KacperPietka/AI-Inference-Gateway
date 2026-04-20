@@ -38,3 +38,5 @@ func (h *ModelsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(types.ModelsReponse{
 		Models: ollamaResp.Models,
+	})
+}
