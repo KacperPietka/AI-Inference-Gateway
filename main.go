@@ -44,7 +44,7 @@ func main() {
 
 	// Build dependencies
 	ollamaClient := models.NewOllamaClient(cfg.OllamaURL)
-	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel)
+	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel, logger)
 	modelsHandler := handlers.NewModelsHandler(ollamaClient)
 
 	// Register routes and pass logger to each middleware wrapped
@@ -82,5 +82,4 @@ func main() {
 		logger.Error("forced shutdown", "error", err)
 	}
 
-	logger.Info("server exited cleanly")
-}
+	logger.Info("server exited clea

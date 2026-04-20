@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	gwerrors "inference-gateway/errors"
 	"inference-gateway/models"
 	"inference-gateway/types"
 )
@@ -20,7 +21,7 @@ func NewModelsHandler(ollama *models.OllamaClient) *ModelsHandler {
 func (h *ModelsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	// Only allow GET
 	if r.Method != http.MethodGet {
-		writeError(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeError(w, gwerrors.ErrMethodNotAllowed)
 		return
 	}
 
@@ -29,7 +30,7 @@ func (h *ModelsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	ollamaResp, err := h.Ollama.GetModels()
 	if err != nil {
 		log.Printf("models error: %v", err)
-		writeError(w, "failed to fetch models", http.StatusInternalServerError)
+		writeError(w, gwerrors.New(gwerrors.ErrModelUnavailable, err))
 		return
 	}
 
@@ -37,5 +38,3 @@ func (h *ModelsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(types.ModelsReponse{
 		Models: ollamaResp.Models,
-	})
-}
