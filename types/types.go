@@ -45,3 +45,16 @@ type OllamaModelsReponse struct {
 type ModelsReponse struct {
 	Models []OllamaModel `json:"models"`
 }
+
+// Health check types
+
+type OllamaHealth struct {
+	Status string `json:"status"`
+	Model  string `json:"model"`
+}
+
+type HealthResponse struct {
+	Status string       `json:"status"`
+	Uptime string       `json:"uptime"`
+	Ollama OllamaHealth `json:"ollama"`
+}

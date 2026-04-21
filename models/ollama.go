@@ -2,6 +2,7 @@ package models
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,6 +25,25 @@ func NewOllamaClient(url string) *OllamaClient {
 			Timeout: 60 * time.Second,
 		},
 	}
+}
+
+// Ping checks if Ollama is reachable
+func (c *OllamaClient) Ping(ctx context.Context) error {
+	url := strings.Replace(c.URL, "/api/generate", "/", 1)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+
+	if err != nil {
+		return fmt.Errorf("failed to build ping request: %w", err)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("ollama unreachable: %w", err)
+	}
+	defer resp.Body.Close()
+
+	return nil
 }
 
 func (c *OllamaClient) GetModels() (*types.OllamaModelsReponse, error) {
