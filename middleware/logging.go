@@ -35,6 +35,12 @@ func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 		start := time.Now()
 		wrapped := newResponseWriter(w)
 
+		// Extract the user ID
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			userID = "anonymous"
+		}
+
 		next(wrapped, r)
 
 		logger.Info("request",
@@ -43,6 +49,7 @@ func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 			"status", wrapped.statusCode,
 			"duration", time.Since(start).String(),
 			"remoted_addr", r.RemoteAddr, // allows to see where requests are coming from
+			"user_id", userID,
 		)
 	}
 }
