@@ -58,11 +58,17 @@ func main() {
 	healthHandler := handlers.NewHealthHandler(ollamaClient, cfg.DefaultModel)
 
 	// Register routes and pass logger to each middleware wrapped
-	http.HandleFunc("/health", middleware.Logger(logger, healthHandler.Handle))
-	http.HandleFunc("/generate", middleware.Logger(logger,
-		middleware.RateLimit(limiter, generateHandler.Handle),
+	http.HandleFunc("/health", middleware.RequestID(
+		middleware.Logger(logger, healthHandler.Handle),
 	))
-	http.HandleFunc("/models", middleware.Logger(logger, modelsHandler.Handle))
+	http.HandleFunc("/generate", middleware.RequestID(
+		middleware.Logger(logger,
+			middleware.RateLimit(limiter, generateHandler.Handle),
+		),
+	))
+	http.HandleFunc("/models", middleware.RequestID(
+		middleware.Logger(logger, modelsHandler.Handle),
+	))
 
 	server := &http.Server{
 		Addr: cfg.ServerPort,

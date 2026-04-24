@@ -1,7 +1,10 @@
 package types
 
-// API types
+type ContextKey string
 
+const RequestIDKey ContextKey = "request_id"
+
+// API types
 type GenerateRequest struct {
 	Prompt string `json:"prompt"`
 	Model  string `json:"model"`

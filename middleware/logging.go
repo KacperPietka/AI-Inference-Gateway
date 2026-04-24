@@ -50,6 +50,7 @@ func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 			"duration", time.Since(start).String(),
 			"remoted_addr", r.RemoteAddr, // allows to see where requests are coming from
 			"user_id", userID,
+			"request_id", GetRequestID(r),
 		)
 	}
 }
