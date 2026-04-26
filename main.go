@@ -17,6 +17,8 @@ import (
 	"inference-gateway/ratelimit"
 )
 
+const requestTimeout = 30 * time.Second
+
 func printBanner(cfg *config.Config) {
 	fmt.Println()
 	fmt.Println("╔════════════════════════════════════════╗")
@@ -59,15 +61,27 @@ func main() {
 
 	// Register routes and pass logger to each middleware wrapped
 	http.HandleFunc("/health", middleware.RequestID(
-		middleware.Logger(logger, healthHandler.Handle),
+		middleware.Logger(logger,
+			middleware.Timeout(requestTimeout,
+				healthHandler.Handle,
+			),
+		),
 	))
 	http.HandleFunc("/generate", middleware.RequestID(
 		middleware.Logger(logger,
-			middleware.RateLimit(limiter, generateHandler.Handle),
+			middleware.Timeout(requestTimeout,
+				middleware.RateLimit(limiter,
+					generateHandler.Handle,
+				),
+			),
 		),
 	))
 	http.HandleFunc("/models", middleware.RequestID(
-		middleware.Logger(logger, modelsHandler.Handle),
+		middleware.Logger(logger,
+			middleware.Timeout(requestTimeout,
+				modelsHandler.Handle,
+			),
+		),
 	))
 
 	server := &http.Server{

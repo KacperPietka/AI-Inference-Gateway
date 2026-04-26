@@ -52,6 +52,10 @@ var (
 		Code:    http.StatusTooManyRequests,
 		Message: "rate limit exceeded",
 	}
+	ErrRequestTimeout = &GatewayError{
+		Code:    http.StatusRequestTimeout,
+		Message: "request timeout",
+	}
 )
 
 // Creates a GateewayError wrapping and underlying error
