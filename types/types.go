@@ -4,6 +4,12 @@ type ContextKey string
 
 const RequestIDKey ContextKey = "request_id"
 
+type VersionResponse struct {
+	Version   string `json:"version"`
+	GoVersion string `json:"go_version"`
+	BuiltAt   string `json:"built_at"`
+}
+
 // API types
 type GenerateRequest struct {
 	Prompt string `json:"prompt"`

@@ -32,6 +32,7 @@ func printBanner(cfg *config.Config) {
 	fmt.Println("Routes:")
 	fmt.Println("  GET  /health")
 	fmt.Println("  GET  /models")
+	fmt.Println("  GET  /version")
 	fmt.Println("  POST /generate")
 	fmt.Println()
 	fmt.Println("Server ready. Press Ctrl+C to stop.")
@@ -58,7 +59,16 @@ func main() {
 	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel, logger)
 	modelsHandler := handlers.NewModelsHandler(ollamaClient)
 	healthHandler := handlers.NewHealthHandler(ollamaClient, cfg.DefaultModel)
+	versionHandler := handlers.NewVersionHandler("v.0.1.0")
 
+	// Version Handle
+	http.HandleFunc("/version", middleware.RequestID(
+		middleware.Logger(logger,
+			middleware.Timeout(requestTimeout,
+				versionHandler.Handle,
+			),
+		),
+	))
 	// Register routes and pass logger to each middleware wrapped
 	http.HandleFunc("/health", middleware.RequestID(
 		middleware.Logger(logger,
