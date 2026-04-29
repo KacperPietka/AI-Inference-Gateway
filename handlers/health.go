@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"inference-gateway/models"
+	"inference-gateway/ratelimit"
 	"inference-gateway/types"
 )
 
@@ -15,12 +16,14 @@ var startTime = time.Now()
 type HealthHandler struct {
 	Ollama       *models.OllamaClient
 	DefaultModel string
+	Limiter      *ratelimit.RateLimiter
 }
 
-func NewHealthHandler(ollama *models.OllamaClient, defaultModel string) *HealthHandler {
+func NewHealthHandler(ollama *models.OllamaClient, defaultModel string, limiter *ratelimit.RateLimiter) *HealthHandler {
 	return &HealthHandler{
 		Ollama:       ollama,
 		DefaultModel: defaultModel,
+		Limiter:      limiter,
 	}
 }
 
@@ -36,6 +39,12 @@ func (h *HealthHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		overallStatus = "degraded"
 	}
 
+	redisStatus := "reachable"
+	if err := h.Limiter.Ping(ctx); err != nil {
+		redisStatus = "unreachable"
+		overallStatus = "degraded"
+	}
+
 	uptime := time.Since(startTime).Round(time.Second).String()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -47,6 +56,9 @@ func (h *HealthHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		Ollama: types.OllamaHealth{
 			Status: ollamaStatus,
 			Model:  h.DefaultModel,
+		},
+		Redis: types.RedisHealth{
+			Status: redisStatus,
 		},
 	})
 }

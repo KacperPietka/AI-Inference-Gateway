@@ -78,3 +78,7 @@ func (rl *RateLimiter) Remaining(ctx context.Context, userID string) (int, error
 func (rl *RateLimiter) Close() error {
 	return rl.client.Close()
 }
+
+func (rl *RateLimiter) Ping(ctx context.Context) error {
+	return rl.client.Ping(ctx).Err()
+}

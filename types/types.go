@@ -62,8 +62,13 @@ type OllamaHealth struct {
 	Model  string `json:"model"`
 }
 
+type RedisHealth struct {
+	Status string `json:"status"`
+}
+
 type HealthResponse struct {
 	Status string       `json:"status"`
 	Uptime string       `json:"uptime"`
 	Ollama OllamaHealth `json:"ollama"`
+	Redis  RedisHealth  `json:"redis"`
 }

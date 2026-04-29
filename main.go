@@ -58,7 +58,7 @@ func main() {
 	ollamaClient := models.NewOllamaClient(cfg.OllamaURL)
 	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel, logger)
 	modelsHandler := handlers.NewModelsHandler(ollamaClient)
-	healthHandler := handlers.NewHealthHandler(ollamaClient, cfg.DefaultModel)
+	healthHandler := handlers.NewHealthHandler(ollamaClient, cfg.DefaultModel, limiter)
 	versionHandler := handlers.NewVersionHandler("v.0.1.0")
 
 	// Version Handle
