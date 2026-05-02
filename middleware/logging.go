@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"inference-gateway/types"
 	"log/slog"
 	"net/http"
 	"os"
@@ -20,6 +21,13 @@ func newResponseWriter(w http.ResponseWriter) *responseWriter {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+func GetModel(r *http.Request) string {
+	if model, ok := r.Context().Value(types.ModelKey).(string); ok {
+		return model
+	}
+	return ""
 }
 
 func NewLogger() *slog.Logger {
@@ -43,14 +51,29 @@ func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 
 		next(wrapped, r)
 
-		logger.Info("request",
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", wrapped.statusCode,
-			"duration", time.Since(start).String(),
-			"remoted_addr", r.RemoteAddr, // allows to see where requests are coming from
-			"user_id", userID,
-			"request_id", GetRequestID(r),
-		)
+		model := GetModel(r)
+
+		if model != "" {
+			logger.Info("request",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"status", wrapped.statusCode,
+				"duration", time.Since(start).String(),
+				"remoted_addr", r.RemoteAddr, // allows to see where requests are coming from
+				"user_id", userID,
+				"request_id", GetRequestID(r),
+				"model", model,
+			)
+		} else {
+			logger.Info("request",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"status", wrapped.statusCode,
+				"duration", time.Since(start).String(),
+				"remote_addr", r.RemoteAddr,
+				"user_id", userID,
+				"request_id", GetRequestID(r),
+			)
+		}
 	}
 }

@@ -3,6 +3,7 @@ package types
 type ContextKey string
 
 const RequestIDKey ContextKey = "request_id"
+const ModelKey ContextKey = "model"
 
 type VersionResponse struct {
 	Version   string `json:"version"`

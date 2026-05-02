@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -54,6 +55,9 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if req.Model == "" {
 		req.Model = h.DefaultModel
 	}
+
+	ctx := context.WithValue(r.Context(), types.ModelKey, req.Model)
+	r = r.WithContext(ctx)
 
 	h.Logger.Info("calling ollama",
 		"model", req.Model,
