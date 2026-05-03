@@ -19,14 +19,25 @@ import (
 
 const requestTimeout = 30 * time.Second
 
-func printBanner(cfg *config.Config) {
+func checkOllama(client *models.OllamaClient) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx); err != nil {
+		return "unreachable"
+	}
+
+	return "reachable"
+}
+
+func printBanner(cfg *config.Config, ollamaStatus string) {
 	fmt.Println()
 	fmt.Println("╔════════════════════════════════════════╗")
 	fmt.Println("║         Inference Gateway              ║")
 	fmt.Println("╚════════════════════════════════════════╝")
 	fmt.Printf("→ Version:       %s\n", "v0.1.0")
 	fmt.Printf("→ Port:          %s\n", cfg.ServerPort)
-	fmt.Printf("→ Ollama URL:    %s\n", cfg.OllamaURL)
+	fmt.Printf("→ Ollama URL:    %s %s\n", cfg.OllamaURL, ollamaStatus)
 	fmt.Printf("→ Default Model: %s\n", cfg.DefaultModel)
 	fmt.Println()
 	fmt.Println("Routes:")
@@ -98,7 +109,8 @@ func main() {
 		Addr: cfg.ServerPort,
 	}
 
-	printBanner(cfg)
+	ollamaStatus := checkOllama(ollamaClient)
+	printBanner(cfg, ollamaStatus)
 
 	// go launches a goroutine, the server runs in the background (immediately executed)
 	go func() {
