@@ -9,4 +9,5 @@ data:
   RATE_LIMIT_REQUESTS: "10"
   RATE_LIMIT_WINDOW_SECONDS: "60"
   OLLAMA_URL: "http://host.minikube.internal:11434/api/generate"
+  CACHE_TTL_SECONDS: "3600"
   

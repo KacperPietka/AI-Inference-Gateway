@@ -39,6 +39,7 @@ func printBanner(cfg *config.Config, ollamaStatus string) {
 	fmt.Printf("→ Port:          %s\n", cfg.ServerPort)
 	fmt.Printf("→ Ollama URL:    %s %s\n", cfg.OllamaURL, ollamaStatus)
 	fmt.Printf("→ Default Model: %s\n", cfg.DefaultModel)
+	fmt.Printf("→ Cache TTL:	 %ds\n", cfg.CacheTTLSeconds)
 	fmt.Println()
 	fmt.Println("Routes:")
 	fmt.Println("  GET  /health")

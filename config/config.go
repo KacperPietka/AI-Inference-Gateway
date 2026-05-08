@@ -12,6 +12,7 @@ type Config struct {
 	RedisURL            string
 	RateLimitRequests   int
 	RateLimitWindowSecs int
+	CacheTTLSeconds     int
 }
 
 func Load() *Config {
@@ -22,6 +23,7 @@ func Load() *Config {
 		RedisURL:            getEnv("REDIS_URL", "localhost:6379"),
 		RateLimitRequests:   getEnvInt("RATE_LIMIT_REQUESTS", 10),
 		RateLimitWindowSecs: getEnvInt("RATE_LIMIT_WINDOW_SECONDS", 60),
+		CacheTTLSeconds:     getEnvInt("CACHE_TTL_SECONDS", 3600),
 	}
 }
 
