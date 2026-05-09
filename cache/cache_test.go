@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -33,4 +35,13 @@ func TestGenerateKey(t *testing.T) {
 
 	// Print example key so you can see the format
 	fmt.Println("Example key:", key1)
+}
+
+func TestErrCacheMiss(t *testing.T) {
+	cache := &RedisCache{}
+
+	_, err := cache.Get(context.Background(), "any-key")
+	if !errors.Is(err, ErrCacheMiss) {
+		t.Errorf("expected ErrCacheMiss got %v", err)
+	}
 }

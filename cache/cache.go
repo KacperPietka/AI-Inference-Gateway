@@ -1,9 +1,12 @@
 package cache
 
 import (
+	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const KeyPrefix = "generate:"
@@ -11,6 +14,14 @@ const KeyPrefix = "generate:"
 // TTL controls how long a cached response lives in Redis
 type Config struct {
 	TTLSeconds int
+}
+
+var ErrCacheMiss = errors.New("cache miss")
+
+type Cache interface {
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key string, value string, ttl time.Duration) error
+	Close() error
 }
 
 func GenerateKey(prompt, model string) string {
