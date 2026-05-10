@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestGenerateKey(t *testing.T) {
@@ -37,10 +38,42 @@ func TestGenerateKey(t *testing.T) {
 	fmt.Println("Example key:", key1)
 }
 
-func TestErrCacheMiss(t *testing.T) {
-	cache := &RedisCache{}
+func TestRedisCache(t *testing.T) {
 
-	_, err := cache.Get(context.Background(), "any-key")
+	cache, err := NewRedisCache("127.0.0.1:6379")
+	if err != nil {
+		t.Skip("Redis not available")
+	}
+	defer cache.Close()
+
+	ctx := context.Background()
+	key := "test:key"
+	value := "test response"
+
+	cache.Delete(ctx, key)
+	defer cache.Delete(ctx, key)
+
+	_, err = cache.Get(ctx, key)
+	if !errors.Is(err, ErrCacheMiss) {
+		t.Errorf("expected ErrCacheMiss got %v", err)
+	}
+
+	err = cache.Set(ctx, key, value, 5*time.Second)
+	if err != nil {
+		t.Errorf("expected no error no Set got %v", err)
+	}
+
+	got, err := cache.Get(ctx, key)
+	if err != nil {
+		t.Errorf("expected no error no Get got %v", err)
+	}
+	if got != value {
+		t.Errorf("expected %s got %s", value, got)
+	}
+}
+
+func TestErrCacheMiss(t *testing.T) {
+	err := ErrCacheMiss
 	if !errors.Is(err, ErrCacheMiss) {
 		t.Errorf("expected ErrCacheMiss got %v", err)
 	}
