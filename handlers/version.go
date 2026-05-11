@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"runtime"
 	"time"
@@ -13,12 +14,14 @@ import (
 var buildTime = time.Now().UTC().Format(time.RFC3339)
 
 type VersionHandler struct {
-	Version string
+	Version     string
+	CacheTTLSec int
 }
 
-func NewVersionHandler(version string) *VersionHandler {
+func NewVersionHandler(version string, cacheTTLSec int) *VersionHandler {
 	return &VersionHandler{
-		Version: version,
+		Version:     version,
+		CacheTTLSec: cacheTTLSec,
 	}
 }
 
@@ -34,5 +37,6 @@ func (h *VersionHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		Version:   h.Version,
 		GoVersion: runtime.Version(),
 		BuiltAt:   buildTime,
+		CacheTTL:  fmt.Sprintf("%ds", h.CacheTTLSec),
 	})
 }

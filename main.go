@@ -71,7 +71,7 @@ func main() {
 	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel, logger)
 	modelsHandler := handlers.NewModelsHandler(ollamaClient)
 	healthHandler := handlers.NewHealthHandler(ollamaClient, cfg.DefaultModel, limiter)
-	versionHandler := handlers.NewVersionHandler("v.0.1.0")
+	versionHandler := handlers.NewVersionHandler("v.0.1.0", cfg.CacheTTLSeconds)
 
 	// Version Handle
 	http.HandleFunc("/version", middleware.RequestID(

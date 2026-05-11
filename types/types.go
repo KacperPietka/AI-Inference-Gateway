@@ -9,6 +9,7 @@ type VersionResponse struct {
 	Version   string `json:"version"`
 	GoVersion string `json:"go_version"`
 	BuiltAt   string `json:"built_at"`
+	CacheTTL  string `json:"cache_ttl"`
 }
 
 // API types
