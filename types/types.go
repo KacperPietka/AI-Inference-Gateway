@@ -49,7 +49,7 @@ type OllamaModel struct {
 	Size int64  `json:"size"`
 }
 
-type OllamaModelsReponse struct {
+type OllamaModelsResponse struct {
 	Models []OllamaModel `json:"models"`
 }
 

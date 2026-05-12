@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"inference-gateway/cache"
 	"inference-gateway/config"
 	"inference-gateway/handlers"
 	"inference-gateway/middleware"
@@ -66,9 +67,23 @@ func main() {
 	}
 	defer limiter.Close()
 
+	redisCache, err := cache.NewRedisCache(cfg.RedisURL)
+	if err != nil {
+		logger.Error("failed to connect to redis for cache", "error", err)
+		os.Exit(1)
+	}
+	defer redisCache.Close()
+
 	// Build dependencies
+	cacheTTL := time.Duration(cfg.CacheTTLSeconds) * time.Second
 	ollamaClient := models.NewOllamaClient(cfg.OllamaURL)
-	generateHandler := handlers.NewGenerateHandler(ollamaClient, cfg.DefaultModel, logger)
+	generateHandler := handlers.NewGenerateHandler(
+		ollamaClient,
+		cfg.DefaultModel,
+		logger,
+		redisCache,
+		cacheTTL,
+	)
 	modelsHandler := handlers.NewModelsHandler(ollamaClient)
 	healthHandler := handlers.NewHealthHandler(ollamaClient, cfg.DefaultModel, limiter)
 	versionHandler := handlers.NewVersionHandler("v.0.1.0", cfg.CacheTTLSeconds)

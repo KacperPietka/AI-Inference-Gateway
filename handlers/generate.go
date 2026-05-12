@@ -5,23 +5,30 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"inference-gateway/cache"
 	gwerrors "inference-gateway/errors"
+	"inference-gateway/interfaces"
 	"inference-gateway/models"
 	"inference-gateway/types"
 )
 
 type GenerateHandler struct {
-	Ollama       *models.OllamaClient
+	Ollama       interfaces.ModelProvider
 	DefaultModel string
 	Logger       *slog.Logger
+	Cache        cache.Cache
+	CacheTTL     time.Duration
 }
 
-func NewGenerateHandler(ollama *models.OllamaClient, defaultModel string, logger *slog.Logger) *GenerateHandler {
+func NewGenerateHandler(ollama *models.OllamaClient, defaultModel string, logger *slog.Logger, c cache.Cache, cacheTTL time.Duration) *GenerateHandler {
 	return &GenerateHandler{
 		Ollama:       ollama,
 		DefaultModel: defaultModel,
 		Logger:       logger,
+		Cache:        c,
+		CacheTTL:     cacheTTL,
 	}
 }
 

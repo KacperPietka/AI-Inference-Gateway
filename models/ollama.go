@@ -9,8 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"inference-gateway/interfaces"
 	"inference-gateway/types"
 )
+
+var _ interfaces.ModelProvider = (*OllamaClient)(nil)
 
 type OllamaClient struct {
 	URL        string
@@ -46,7 +49,7 @@ func (c *OllamaClient) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (c *OllamaClient) GetModels() (*types.OllamaModelsReponse, error) {
+func (c *OllamaClient) GetModels() (*types.OllamaModelsResponse, error) {
 	// This is a GET request - simpler than Generate
 	// Ollama's models endpoint is /api/tags
 	url := strings.Replace(c.URL, "/api/generate", "/api/tags", 1)
@@ -61,7 +64,7 @@ func (c *OllamaClient) GetModels() (*types.OllamaModelsReponse, error) {
 		return nil, fmt.Errorf("ollama returned statis %d", resp.StatusCode)
 	}
 
-	var modelsResp types.OllamaModelsReponse
+	var modelsResp types.OllamaModelsResponse
 	err = json.NewDecoder(resp.Body).Decode(&modelsResp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode models response: %w", err)
