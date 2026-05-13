@@ -66,6 +66,18 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), types.ModelKey, req.Model)
 	r = r.WithContext(ctx)
 
+	key := cache.GenerateKey(req.Prompt, req.Model)
+
+	if cached, err := h.Cache.Get(r.Context(), key); err == nil {
+		h.Logger.Info("cache hit", "key", key, "model", req.Model)
+
+		w.Header().Set("X-Cache", "HIT")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(cached))
+		return
+	}
+
 	h.Logger.Info("calling ollama",
 		"model", req.Model,
 		"prompt", req.Prompt,
@@ -79,12 +91,22 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("X-Cache", "MISS")
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(types.GenerateResponse{
+	respBytes, err := json.Marshal(types.GenerateResponse{
 		Response: ollamaResp.Response,
 		Model:    ollamaResp.Model,
 		Cached:   false,
 	})
+	if err != nil {
+		writeError(w, gwerrors.ErrInternalServer)
+		return
+	}
+
+	if err := h.Cache.Set(r.Context(), key, string(respBytes), h.CacheTTL); err != nil {
+		h.Logger.Error("failed to cache response", "error", err)
+	}
+
+	w.Header().Set("X-Cache", "MISS")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(respBytes)
 }

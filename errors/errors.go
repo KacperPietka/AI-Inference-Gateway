@@ -56,6 +56,10 @@ var (
 		Code:    http.StatusRequestTimeout,
 		Message: "request timeout",
 	}
+	ErrInternalServer = &GatewayError{
+		Code:    http.StatusInternalServerError,
+		Message: "internal server error",
+	}
 )
 
 // Creates a GateewayError wrapping and underlying error
