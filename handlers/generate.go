@@ -10,25 +10,26 @@ import (
 	"inference-gateway/cache"
 	gwerrors "inference-gateway/errors"
 	"inference-gateway/interfaces"
-	"inference-gateway/models"
 	"inference-gateway/types"
 )
 
 type GenerateHandler struct {
-	Ollama       interfaces.ModelProvider
-	DefaultModel string
-	Logger       *slog.Logger
-	Cache        cache.Cache
-	CacheTTL     time.Duration
+	Ollama         interfaces.ModelProvider
+	DefaultModel   string
+	SecondaryModel string
+	Logger         *slog.Logger
+	Cache          cache.Cache
+	CacheTTL       time.Duration
 }
 
-func NewGenerateHandler(ollama *models.OllamaClient, defaultModel string, logger *slog.Logger, c cache.Cache, cacheTTL time.Duration) *GenerateHandler {
+func NewGenerateHandler(ollama interfaces.ModelProvider, defaultModel string, secondaryModel string, logger *slog.Logger, c cache.Cache, cacheTTL time.Duration) *GenerateHandler {
 	return &GenerateHandler{
-		Ollama:       ollama,
-		DefaultModel: defaultModel,
-		Logger:       logger,
-		Cache:        c,
-		CacheTTL:     cacheTTL,
+		Ollama:         ollama,
+		DefaultModel:   defaultModel,
+		SecondaryModel: secondaryModel,
+		Logger:         logger,
+		Cache:          c,
+		CacheTTL:       cacheTTL,
 	}
 }
 
@@ -39,6 +40,28 @@ func writeError(w http.ResponseWriter, err *gwerrors.GatewayError) {
 		Error: err.Message,
 		Code:  err.Code,
 	})
+}
+
+func (h *GenerateHandler) routeModel(requestedModel, prompt string) string {
+	if requestedModel != "" {
+		return requestedModel
+	}
+
+	// short prompts --> faster, cheaper models
+	// long prompts --> more capable models
+	const shortPromptThreshold = 50
+
+	if len(prompt) < shortPromptThreshold {
+		return h.DefaultModel
+	}
+
+	// Falls back to defaultmodel if SecondaryModel not configured
+	if h.SecondaryModel != "" {
+		return h.SecondaryModel
+	}
+
+	return h.DefaultModel
+
 }
 
 func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -59,9 +82,7 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Model == "" {
-		req.Model = h.DefaultModel
-	}
+	req.Model = h.routeModel(req.Model, req.Prompt)
 
 	ctx := context.WithValue(r.Context(), types.ModelKey, req.Model)
 	r = r.WithContext(ctx)
@@ -71,15 +92,22 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if cached, err := h.Cache.Get(r.Context(), key); err == nil {
 		h.Logger.Info("cache hit", "key", key, "model", req.Model)
 
-		w.Header().Set("X-Cache", "HIT")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(cached))
-		return
+		var cachedResp types.GenerateResponse
+		if err := json.Unmarshal([]byte(cached), &cachedResp); err == nil {
+			cachedResp.Cached = true
+			respBytes, _ := json.Marshal(cachedResp)
+			w.Header().Set("X-Cache", "HIT")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(respBytes)
+			return
+
+		}
 	}
 
-	h.Logger.Info("calling ollama",
+	h.Logger.Info("cache miss, calling ollama",
 		"model", req.Model,
+		"prompt_length", len(req.Prompt),
 		"prompt", req.Prompt,
 	)
 

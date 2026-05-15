@@ -40,6 +40,7 @@ func printBanner(cfg *config.Config, ollamaStatus string) {
 	fmt.Printf("→ Port:          %s\n", cfg.ServerPort)
 	fmt.Printf("→ Ollama URL:    %s %s\n", cfg.OllamaURL, ollamaStatus)
 	fmt.Printf("→ Default Model: %s\n", cfg.DefaultModel)
+	fmt.Printf("→ Secondary Model: %s\n", cfg.SecondaryModel)
 	fmt.Printf("→ Cache TTL:	 %ds\n", cfg.CacheTTLSeconds)
 	fmt.Println()
 	fmt.Println("Routes:")
@@ -80,6 +81,7 @@ func main() {
 	generateHandler := handlers.NewGenerateHandler(
 		ollamaClient,
 		cfg.DefaultModel,
+		cfg.SecondaryModel,
 		logger,
 		redisCache,
 		cacheTTL,

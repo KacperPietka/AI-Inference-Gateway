@@ -20,6 +20,7 @@ services:
       - SERVER_PORT=:8080
       - OLLAMA_URL=http://host.docker.internal:11434/api/generate
       - DEFAULT_MODEL=tinyllama
+      - SECONDARY_MODEL=mistral
       - REDIS_URL=redis:6379
       - RATE_LIMIT_REQUESTS=10
       - RATE_LIMIT_WINDOW_SECONDS=60
