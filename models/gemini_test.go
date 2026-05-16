@@ -32,7 +32,7 @@ func TestGeminiPing(t *testing.T) {
 		t.Skip("GEMINI_API_KEY not set")
 	}
 
-	client := NewGeminiClient(apiKey, "gemini-2.0-flash")
+	client := NewGeminiClient(apiKey, "gemini-3-flash-preview")
 
 	if err := client.Ping(context.Background()); err != nil {
 		t.Fatalf("expected ping to succeed got %v", err)
