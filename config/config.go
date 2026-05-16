@@ -14,6 +14,8 @@ type Config struct {
 	RateLimitRequests   int
 	RateLimitWindowSecs int
 	CacheTTLSeconds     int
+	GeminiAPIKey        string
+	GeminiModel         string
 }
 
 func Load() *Config {
@@ -26,6 +28,8 @@ func Load() *Config {
 		RateLimitRequests:   getEnvInt("RATE_LIMIT_REQUESTS", 10),
 		RateLimitWindowSecs: getEnvInt("RATE_LIMIT_WINDOW_SECONDS", 60),
 		CacheTTLSeconds:     getEnvInt("CACHE_TTL_SECONDS", 3600),
+		GeminiAPIKey:        getEnv("GEMINI_API_KEY", ""),
+		GeminiModel:         getEnv("GEMINI_MODEL", "gemini-3-flash-preview"),
 	}
 }
 

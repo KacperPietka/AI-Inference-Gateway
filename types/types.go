@@ -74,3 +74,33 @@ type HealthResponse struct {
 	Ollama OllamaHealth `json:"ollama"`
 	Redis  RedisHealth  `json:"redis"`
 }
+
+// Gemini request types
+type GeminiPart struct {
+	Text string `json:"text"`
+}
+
+type GeminiContent struct {
+	Parts []GeminiPart `json:"parts"`
+}
+
+type GeminiRequest struct {
+	Contents []GeminiContent `json:"contents"`
+}
+
+// Gemini response types
+type GeminiResponsePart struct {
+	Text string `json:"text"`
+}
+
+type GeminiResponseContent struct {
+	Parts []GeminiResponsePart `json:"parts"`
+}
+
+type GeminiCandidate struct {
+	Content GeminiResponseContent `json:"content"`
+}
+
+type GeminiResponse struct {
+	Candidates []GeminiCandidate `json:"candidates"`
+}

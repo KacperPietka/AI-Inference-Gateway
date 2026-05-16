@@ -39,6 +39,12 @@ func printBanner(cfg *config.Config, ollamaStatus string) {
 	fmt.Printf("→ Version:       %s\n", "v0.1.0")
 	fmt.Printf("→ Port:          %s\n", cfg.ServerPort)
 	fmt.Printf("→ Ollama URL:    %s %s\n", cfg.OllamaURL, ollamaStatus)
+	fmt.Printf("→ Gemini Model:    %s\n", cfg.GeminiModel)
+	if cfg.GeminiAPIKey != "" {
+		fmt.Printf("→ Gemini API:      configured\n")
+	} else {
+		fmt.Printf("→ Gemini API:      not configured\n")
+	}
 	fmt.Printf("→ Default Model: %s\n", cfg.DefaultModel)
 	fmt.Printf("→ Secondary Model: %s\n", cfg.SecondaryModel)
 	fmt.Printf("→ Cache TTL:	 %ds\n", cfg.CacheTTLSeconds)
@@ -77,7 +83,16 @@ func main() {
 
 	// Build dependencies
 	cacheTTL := time.Duration(cfg.CacheTTLSeconds) * time.Second
+
 	ollamaClient := models.NewOllamaClient(cfg.OllamaURL)
+	geminiClient := models.NewGeminiClient(cfg.GeminiAPIKey, cfg.GeminiModel)
+
+	if geminiClient != nil {
+		logger.Info("gemini client initialized", "model", cfg.GeminiModel)
+	} else {
+		logger.Info("gemini not configured, using ollama only")
+	}
+
 	generateHandler := handlers.NewGenerateHandler(
 		ollamaClient,
 		cfg.DefaultModel,
