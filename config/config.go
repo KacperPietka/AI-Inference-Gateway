@@ -8,7 +8,6 @@ import (
 type Config struct {
 	OllamaURL           string
 	DefaultModel        string
-	SecondaryModel      string
 	ServerPort          string
 	RedisURL            string
 	RateLimitRequests   int
@@ -22,7 +21,6 @@ func Load() *Config {
 	return &Config{
 		OllamaURL:           getEnv("OLLAMA_URL", "http://localhost:11434/api/generate"),
 		DefaultModel:        getEnv("DEFAULT_MODEL", "tinyllama"),
-		SecondaryModel:      getEnv("SECONDARY_MODEL", "mistral"),
 		ServerPort:          getEnv("SERVER_PORT", ":8080"),
 		RedisURL:            getEnv("REDIS_URL", "localhost:6379"),
 		RateLimitRequests:   getEnvInt("RATE_LIMIT_REQUESTS", 10),

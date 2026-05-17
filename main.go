@@ -16,6 +16,7 @@ import (
 	"inference-gateway/middleware"
 	"inference-gateway/models"
 	"inference-gateway/ratelimit"
+	"inference-gateway/router"
 )
 
 const requestTimeout = 30 * time.Second
@@ -46,7 +47,6 @@ func printBanner(cfg *config.Config, ollamaStatus string) {
 		fmt.Printf("→ Gemini API:      not configured\n")
 	}
 	fmt.Printf("→ Default Model: %s\n", cfg.DefaultModel)
-	fmt.Printf("→ Secondary Model: %s\n", cfg.SecondaryModel)
 	fmt.Printf("→ Cache TTL:	 %ds\n", cfg.CacheTTLSeconds)
 	fmt.Println()
 	fmt.Println("Routes:")
@@ -93,10 +93,36 @@ func main() {
 		logger.Info("gemini not configured, using ollama only")
 	}
 
+	r := router.New(ollamaClient, cfg.DefaultModel)
+
+	if geminiClient != nil {
+		r.AddRule(router.Rule{
+			Name:      "code-to-gemini",
+			Condition: router.ContainsCode,
+			Provider:  geminiClient,
+			Model:     cfg.GeminiModel,
+		})
+		r.AddRule(router.Rule{
+			Name:      "long-to-gemini",
+			Condition: router.IsLongPrompt,
+			Provider:  geminiClient,
+			Model:     cfg.GeminiModel,
+		})
+		logger.Info("gemini routing enabled", "model", cfg.GeminiModel)
+	} else {
+		logger.Info("gemini not configured, all requests routed to ollama")
+	}
+
+	r.AddRule(router.Rule{
+		Name:      "short-to-ollama",
+		Condition: router.IsShortPrompt,
+		Provider:  ollamaClient,
+		Model:     cfg.DefaultModel,
+	})
+
 	generateHandler := handlers.NewGenerateHandler(
-		ollamaClient,
+		r,
 		cfg.DefaultModel,
-		cfg.SecondaryModel,
 		logger,
 		redisCache,
 		cacheTTL,
