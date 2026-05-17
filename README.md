@@ -1,6 +1,6 @@
 # AI Inference Gateway
 
-A self-hosted API gateway written in Go that sits in front of AI models. It centralizes control over model access, handles rate limiting, caching, and observability in one place.
+A self-hosted API gateway written in Go that sits in front of AI models. It centralizes control over model access, handles intelligent routing, rate limiting, caching, and observability in one place.
 
 ## The Problem
 
@@ -16,25 +16,27 @@ Problems:
 - Every app reimplements the same logic
 - No central cost visibility
 - No rate limiting or quota management
-- No reliability guarantees
+- No intelligent routing between providers
 
 With the gateway:
 
 ```
-App -> Gateway -> OpenAI / Gemini / Ollama
+App -> Gateway -> Ollama (local, fast, free)
+               -> Gemini API (cloud, capable)
 ```
 
 ---
 
 ## Features
 
-- Request forwarding to local and remote model providers
+- Intelligent model routing — short prompts go to Ollama, long or code prompts go to Gemini
+- Multi-provider support — Ollama and Gemini API with a unified interface
 - Per-user rate limiting backed by Redis
 - Response caching — same prompt returns instantly without calling the model
 - Structured JSON logging with request ID tracing
 - Health checks for all dependencies
 - Graceful shutdown
-- Deployed on GKE with rolling updates
+- Deployed on GKE with rolling updates and automated deploy script
 
 ---
 
@@ -53,10 +55,39 @@ Logger Middleware
 Timeout Middleware
     |
     v
-RateLimit Middleware
+RateLimit Middleware (Redis)
     |
     v
-Handler -> Model Provider
+Cache Check (Redis)
+    |
+    +--> HIT  -> return instantly (X-Cache: HIT)
+    |
+    +--> MISS -> Router
+                    |
+                    +--> short prompt  -> Ollama (tinyllama)
+                    +--> long prompt   -> Gemini (gemini-2.0-flash)
+                    +--> code prompt   -> Gemini (gemini-2.0-flash)
+                    +--> fallback      -> Ollama
+```
+
+### Project Structure
+
+```
+inference-gateway/
+├── cache/          <- cache interface, key generation, Redis implementation
+├── config/         <- environment-based configuration
+├── errors/         <- custom error types and sentinels
+├── handlers/       <- HTTP handlers (generate, health, models, version)
+├── interfaces/     <- shared interfaces (ModelProvider)
+├── middleware/     <- logging, rate limiting, timeout, request ID
+├── models/         <- Ollama and Gemini clients
+├── ratelimit/      <- Redis rate limiter
+├── router/         <- model routing rules and logic
+├── types/          <- shared types and context keys
+├── k8s/            <- Kubernetes manifests
+├── Dockerfile
+├── docker-compose.yml
+└── deploy.sh
 ```
 
 ---
@@ -68,6 +99,7 @@ Handler -> Model Provider
 - Go 1.26+
 - Docker and Docker Compose
 - Ollama with at least one model pulled
+- Gemini API key (optional, from aistudio.google.com)
 
 ### Run locally
 
@@ -77,11 +109,33 @@ ollama serve
 go run main.go
 ```
 
+With Gemini routing enabled:
+```bash
+GEMINI_API_KEY=your-key go run main.go
+```
+
 ### Run with Docker Compose
 
 ```bash
 docker compose up --build
 ```
+
+---
+
+## Routing Logic
+
+The gateway routes requests automatically based on prompt characteristics:
+
+| Condition | Provider | Model |
+|---|---|---|
+| Contains code keywords | Gemini | gemini-2.0-flash |
+| Prompt >= 50 characters | Gemini | gemini-2.0-flash |
+| Prompt < 50 characters | Ollama | tinyllama |
+| Fallback | Ollama | tinyllama |
+
+Users can always override routing by specifying a model explicitly in the request.
+
+If `GEMINI_API_KEY` is not set, all requests route to Ollama.
 
 ---
 
@@ -103,6 +157,14 @@ Response:
   "model": "tinyllama",
   "cached": false
 }
+```
+
+Response headers:
+```
+X-Cache: MISS
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 9
+X-Request-ID: req-a3f9b2
 ```
 
 ### GET /health
@@ -132,7 +194,8 @@ Response:
 {
   "version": "v0.1.0",
   "go_version": "go1.26.1",
-  "built_at": "2026-04-27T09:00:00Z"
+  "built_at": "2026-04-27T09:00:00Z",
+  "cache_ttl": "3600s"
 }
 ```
 
@@ -144,7 +207,13 @@ Response:
 ./deploy.sh
 ```
 
-Builds the image, pushes to Artifact Registry, and performs a rolling update on GKE.
+Builds the image tagged with the git commit hash, pushes to Google Artifact Registry, and performs a rolling update on GKE with a health check verification at the end.
+
+Scale down when not in use:
+```bash
+kubectl scale deployment gateway --replicas=0 -n inference-gateway
+kubectl scale deployment redis --replicas=0 -n inference-gateway
+```
 
 ---
 
@@ -153,7 +222,9 @@ Builds the image, pushes to Artifact Registry, and performs a rolling update on 
 | Component | Technology |
 |---|---|
 | Language | Go 1.26 |
-| Model provider | Ollama |
+| Local model provider | Ollama |
+| Cloud model provider | Gemini API |
 | Cache and rate limiting | Redis |
 | Orchestration | Kubernetes / GKE |
-| Logging | Go slog |
+| Image registry | Google Artifact Registry |
+| Logging | Go slog (structured JSON) |
