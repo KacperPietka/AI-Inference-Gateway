@@ -1,0 +1,8 @@
+# Local state — never commit this
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+
+# Crash logs
+crash.log
