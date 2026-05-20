@@ -45,7 +45,7 @@ jobs:
             cache: true
         
         - name: Run go vet
-          run go vet ./...
+          run: go vet ./...
 
         - name: Check formatting
           run: |
