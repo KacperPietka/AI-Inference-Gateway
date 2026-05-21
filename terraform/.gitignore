@@ -1,8 +1,9 @@
-# Local state — never commit this
+# Local overrides — never commit
+terraform.tfvars
+*.auto.tfvars
+
+# Never commit state
 *.tfstate
 *.tfstate.backup
 .terraform/
-*.tfvars
-
-# Crash logs
 crash.log
