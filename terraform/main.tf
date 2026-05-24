@@ -1,22 +1,22 @@
 provider "google" {
-    project = var.project_id
-    region = var.region
-    zone = var.zone
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
 }
 
 resource "google_artifact_registry_repository" "gateway" {
-    repository_id = var.registry_name
-    format = "DOCKER"
-    location = var.region
-    description = "Inference Gateway Docker images"
+  repository_id = var.registry_name
+  format        = "DOCKER"
+  location      = var.region
+  description   = "Inference Gateway Docker images"
 
-    cleanup_policies {
-        id = "keep-minimum-versions"
-        action = "KEEP"
-        most_recent_versions {
-          keep_count = 10
-        }
+  cleanup_policies {
+    id     = "keep-minimum-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 10
     }
+  }
 }
 
 # IAM -> allow GKE to pull from Artifact Registry
@@ -28,17 +28,17 @@ resource "google_project_iam_member" "gke_artifact_registry" {
 
 resource "google_project_iam_member" "gke_node_service_account" {
   project = var.project_id
-  role = "roles/container.defaultNodeServiceAccount"
-  member = "serviceAccount:${var.project_number}-compute@developer.gserviceaccount.com"
+  role    = "roles/container.defaultNodeServiceAccount"
+  member  = "serviceAccount:${var.project_number}-compute@developer.gserviceaccount.com"
 }
 
 # GKE Cluster
 resource "google_container_cluster" "gateway" {
-  name = var.cluster_name
+  name     = var.cluster_name
   location = var.zone
 
   remove_default_node_pool = true
-  initial_node_count = 1
+  initial_node_count       = 1
   lifecycle {
     ignore_changes = [
       node_config,
@@ -54,9 +54,9 @@ resource "google_container_cluster" "gateway" {
 
 # GKE Node Pool
 resource "google_container_node_pool" "gateway_nodes" {
-  name = "default-pool"
-  cluster = google_container_cluster.gateway.name
-  location = var.zone
+  name       = "default-pool"
+  cluster    = google_container_cluster.gateway.name
+  location   = var.zone
   node_count = var.node_count
 
   node_config {
@@ -85,7 +85,7 @@ resource "google_container_node_pool" "gateway_nodes" {
   }
 
   management {
-    auto_repair = true
+    auto_repair  = true
     auto_upgrade = true
   }
 }
