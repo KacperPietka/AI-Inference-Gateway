@@ -27,14 +27,17 @@ func TestContainsCode(t *testing.T) {
 func TestRouterFallback(t *testing.T) {
 	// Mock provider for testing
 	mock := &mockProvider{}
-	r := New(mock, "tinyllama")
+	r := New(mock, "tinyllama", "ollama")
 
-	provider, model := r.Route("hi")
+	provider, model, providerName := r.Route("hi")
 	if provider != mock {
 		t.Error("expected fallback provider")
 	}
 	if model != "tinyllama" {
 		t.Errorf("expected tinyllama got %s", model)
+	}
+	if providerName != "ollama" {
+		t.Errorf("expected ollama got %s", providerName)
 	}
 }
 
@@ -43,36 +46,44 @@ func TestRouterFirstMatchWins(t *testing.T) {
 	mock2 := &mockProvider{}
 	fallback := &mockProvider{}
 
-	r := New(fallback, "tinyllama")
+	r := New(fallback, "tinyllama", "ollama")
 	r.AddRule(Rule{
-		Name:      "short",
-		Condition: IsShortPrompt,
-		Provider:  mock1,
-		Model:     "fast-model",
+		Name:         "short",
+		Condition:    IsShortPrompt,
+		Provider:     mock1,
+		Model:        "fast-model",
+		ProviderName: "ollama",
 	})
 	r.AddRule(Rule{
-		Name:      "long",
-		Condition: IsLongPrompt,
-		Provider:  mock2,
-		Model:     "smart-model",
+		Name:         "long",
+		Condition:    IsLongPrompt,
+		Provider:     mock2,
+		Model:        "smart-model",
+		ProviderName: "gemini",
 	})
 
 	// Short prompt → mock1
-	provider, model := r.Route("hi")
+	provider, model, providerName := r.Route("hi")
 	if provider != mock1 {
 		t.Error("expected mock1 for short prompt")
 	}
 	if model != "fast-model" {
 		t.Errorf("expected fast-model got %s", model)
 	}
+	if providerName != "ollama" {
+		t.Errorf("expected ollama got %s", providerName)
+	}
 
 	// Long prompt → mock2
-	provider, model = r.Route("This is a very long prompt that exceeds fifty characters easily")
+	provider, model, providerName = r.Route("This is a very long prompt that exceeds fifty characters easily")
 	if provider != mock2 {
 		t.Error("expected mock2 for long prompt")
 	}
 	if model != "smart-model" {
 		t.Errorf("expected smart-model got %s", model)
+	}
+	if providerName != "gemini" {
+		t.Errorf("expected gemini got %s", providerName)
 	}
 }
 
