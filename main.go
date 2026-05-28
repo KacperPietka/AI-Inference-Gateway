@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"context"
 	"fmt"
 	"log"
@@ -13,6 +15,7 @@ import (
 	"inference-gateway/cache"
 	"inference-gateway/config"
 	"inference-gateway/handlers"
+	"inference-gateway/metrics"
 	"inference-gateway/middleware"
 	"inference-gateway/models"
 	"inference-gateway/ratelimit"
@@ -66,6 +69,8 @@ func main() {
 	// Created the structured logger once which is shared across all middleware
 	logger := middleware.NewLogger()
 
+	metrics.Register()
+
 	// Connect to Redis
 	limiter, err := ratelimit.New(cfg.RedisURL, cfg.RateLimitRequests, cfg.RateLimitWindowSecs)
 	if err != nil {
@@ -93,20 +98,22 @@ func main() {
 		logger.Info("gemini not configured, using ollama only")
 	}
 
-	r := router.New(ollamaClient, cfg.DefaultModel)
+	r := router.New(ollamaClient, cfg.DefaultModel, "ollama")
 
 	if geminiClient != nil {
 		r.AddRule(router.Rule{
-			Name:      "code-to-gemini",
-			Condition: router.ContainsCode,
-			Provider:  geminiClient,
-			Model:     cfg.GeminiModel,
+			Name:         "code-to-gemini",
+			Condition:    router.ContainsCode,
+			Provider:     geminiClient,
+			Model:        cfg.GeminiModel,
+			ProviderName: "gemini",
 		})
 		r.AddRule(router.Rule{
-			Name:      "long-to-gemini",
-			Condition: router.IsLongPrompt,
-			Provider:  geminiClient,
-			Model:     cfg.GeminiModel,
+			Name:         "long-to-gemini",
+			Condition:    router.IsLongPrompt,
+			Provider:     geminiClient,
+			Model:        cfg.GeminiModel,
+			ProviderName: "gemini",
 		})
 		logger.Info("gemini routing enabled", "model", cfg.GeminiModel)
 	} else {
@@ -114,10 +121,11 @@ func main() {
 	}
 
 	r.AddRule(router.Rule{
-		Name:      "short-to-ollama",
-		Condition: router.IsShortPrompt,
-		Provider:  ollamaClient,
-		Model:     cfg.DefaultModel,
+		Name:         "short-to-ollama",
+		Condition:    router.IsShortPrompt,
+		Provider:     ollamaClient,
+		Model:        cfg.DefaultModel,
+		ProviderName: "ollama",
 	})
 
 	generateHandler := handlers.NewGenerateHandler(
@@ -163,6 +171,8 @@ func main() {
 			),
 		),
 	))
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	server := &http.Server{
 		Addr: cfg.ServerPort,

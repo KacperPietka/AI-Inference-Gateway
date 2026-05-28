@@ -9,6 +9,7 @@ import (
 
 	"inference-gateway/cache"
 	gwerrors "inference-gateway/errors"
+	"inference-gateway/metrics"
 	"inference-gateway/router"
 	"inference-gateway/types"
 )
@@ -59,7 +60,7 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Router decides provider and model
-	provider, model := h.Router.Route(req.Prompt)
+	provider, model, providerName := h.Router.Route(req.Prompt)
 	if provider == nil {
 		writeError(w, gwerrors.ErrModelUnavailable)
 		return
@@ -76,7 +77,10 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	key := cache.GenerateKey(req.Prompt, model)
 
 	if cached, err := h.Cache.Get(r.Context(), key); err == nil {
+		metrics.CacheHitsTotal.WithLabelValues("hit").Inc()
 		h.Logger.Info("cache hit", "key", key, "model", model)
+
+		metrics.ModelRequestsTotal.WithLabelValues(model, providerName).Inc()
 
 		var cachedResp types.GenerateResponse
 		if err := json.Unmarshal([]byte(cached), &cachedResp); err == nil {
@@ -91,12 +95,16 @@ func (h *GenerateHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	metrics.CacheHitsTotal.WithLabelValues("miss").Inc()
+
 	resp, err := provider.Generate(req.Prompt, model)
 	if err != nil {
 		h.Logger.Error("provider error", "error", err)
 		writeError(w, gwerrors.New(gwerrors.ErrModelUnavailable, err))
 		return
 	}
+
+	metrics.ModelRequestsTotal.WithLabelValues(model, providerName).Inc()
 
 	respBytes, err := json.Marshal(types.GenerateResponse{
 		Response: resp.Response,

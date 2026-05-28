@@ -7,24 +7,27 @@ import (
 
 // Defines a single routing decision
 type Rule struct {
-	Name      string
-	Condition func(prompt string) bool
-	Provider  interfaces.ModelProvider
-	Model     string
+	Name         string
+	Condition    func(prompt string) bool
+	Provider     interfaces.ModelProvider
+	Model        string
+	ProviderName string
 }
 
 // Holds all routing rules and fallback provider
 type Router struct {
-	Rules         []Rule
-	Fallback      interfaces.ModelProvider
-	FallbackModel string
+	Rules                []Rule
+	Fallback             interfaces.ModelProvider
+	FallbackModel        string
+	FallbackProviderName string
 }
 
 // Creates a Router with the given rules and fallback
-func New(fallback interfaces.ModelProvider, fallbackModel string) *Router {
+func New(fallback interfaces.ModelProvider, fallbackModel string, fallbackProviderName string) *Router {
 	return &Router{
-		Fallback:      fallback,
-		FallbackModel: fallbackModel,
+		Fallback:             fallback,
+		FallbackModel:        fallbackModel,
+		FallbackProviderName: fallbackProviderName,
 	}
 }
 
@@ -33,13 +36,13 @@ func (r *Router) AddRule(rule Rule) {
 	r.Rules = append(r.Rules, rule)
 }
 
-func (r *Router) Route(prompt string) (interfaces.ModelProvider, string) {
+func (r *Router) Route(prompt string) (interfaces.ModelProvider, string, string) {
 	for _, rule := range r.Rules {
 		if rule.Condition(prompt) {
-			return rule.Provider, rule.Model
+			return rule.Provider, rule.Model, rule.ProviderName
 		}
 	}
-	return r.Fallback, r.FallbackModel
+	return r.Fallback, r.FallbackModel, r.FallbackProviderName
 }
 
 func IsShortPrompt(prompt string) bool {

@@ -1,11 +1,14 @@
 package middleware
 
 import (
-	"inference-gateway/types"
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
+
+	"inference-gateway/metrics"
+	"inference-gateway/types"
 )
 
 type responseWriter struct {
@@ -51,6 +54,20 @@ func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 
 		next(wrapped, r)
 
+		duration := time.Since(start)
+
+		// Record metrics
+		metrics.RequestsTotal.WithLabelValues(
+			r.Method,
+			r.URL.Path,
+			strconv.Itoa(wrapped.statusCode),
+		).Inc()
+
+		metrics.RequestDuration.WithLabelValues(
+			r.Method,
+			r.URL.Path,
+		).Observe(duration.Seconds())
+
 		model := GetModel(r)
 
 		if model != "" {
@@ -58,7 +75,7 @@ func Logger(logger *slog.Logger, next http.HandlerFunc) http.HandlerFunc {
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", wrapped.statusCode,
-				"duration", time.Since(start).String(),
+				"duration", duration.String(),
 				"remoted_addr", r.RemoteAddr, // allows to see where requests are coming from
 				"user_id", userID,
 				"request_id", GetRequestID(r),

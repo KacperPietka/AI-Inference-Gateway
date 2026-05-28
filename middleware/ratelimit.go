@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	gwerrors "inference-gateway/errors"
+	"inference-gateway/metrics"
 	"inference-gateway/ratelimit"
 )
 
@@ -25,6 +26,7 @@ func RateLimit(limiter *ratelimit.RateLimiter, next http.HandlerFunc) http.Handl
 		}
 
 		if !allowed {
+			metrics.RateLimitedTotal.WithLabelValues(userID).Inc()
 			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(10))
 			w.Header().Set("X-RateLimit-Remaining", "0")
 			writeRateLimitError(w)
